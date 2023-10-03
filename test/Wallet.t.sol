@@ -25,6 +25,7 @@ contract WalletTest is Test {
     }
 
     function testPayFromUser() public{
+        // Sets up a prank from an address that has some ether.
         hoax(user);
         wallet.pay{value: amount}();
         assertEq(wallet.getBalance(), amount);
@@ -36,6 +37,7 @@ contract WalletTest is Test {
     }
 
     function testWithdrawRejectFromUser() public {
+        // Sets msg.sender to the specified address 
         vm.prank(user);
         vm.expectRevert(bytes("Insufficient funds"));
         wallet.withdraw(amount);
@@ -54,17 +56,15 @@ contract WalletTest is Test {
     function testWithdrawWithDelay() public {
         uint256 startBalance = wallet.getBalance();
         wallet.pay{value: amount}();
-        console.log(block.number);
-
+        // Sets block.number
         vm.roll(block.number + 130);
-        console.log(block.number);
+
         wallet.withdrawWithDelay(amount);
 
         assertEq(wallet.getBalance(), startBalance);
     }
-    // Function to receive Ether. msg.data must be empty
+
     receive() external payable {}
 
-    // Fallback function is called when msg.data is not empty
     fallback() external payable {}
 }
