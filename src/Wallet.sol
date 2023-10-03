@@ -33,7 +33,7 @@ contract Wallet {
 
 
     function withdrawWithDelay(uint256 _amountToWithdraw) public {
-        require(block.number > blockofpay[msg.sender] + 120, "Too early");
+        require(block.number > blockofpay[msg.sender] + DELAY, "Too early");
 
         address user = msg.sender;
         userbalance[user] -= _amountToWithdraw;
