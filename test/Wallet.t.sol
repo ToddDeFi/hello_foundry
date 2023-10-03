@@ -1,26 +1,70 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {Wallet} from "../src/Wallet.sol";
 
 contract WalletTest is Test {
-
-    uint256 amount = 100;
     Wallet public wallet;
 
+    address public self = address(this);
+    address user = makeAddr("user");
+    uint256 amount = 1000;
+    
     function setUp() public {
-        counter = new Counter();
-        counter.setNumber(0);
+        wallet = new Wallet();
     }
 
-    function test_Increment() public {
-        counter.increment();
-        assertEq(counter.number(), 1);
+    function testGetBalance() public{
+        assertEq(wallet.getBalance(), 0);
     }
 
-    function testFuzz_SetNumber(uint256 x) public {
-        counter.setNumber(x);
-        assertEq(counter.number(), x);
+    function testPay() public{
+        wallet.pay{value: amount}();
+        assertEq(wallet.getBalance(), amount);
     }
+
+    function testPayFromUser() public{
+        hoax(user);
+        wallet.pay{value: amount}();
+        assertEq(wallet.getBalance(), amount);
+    }
+
+    function testWithdrawReject() public {
+        vm.expectRevert(bytes("Insufficient funds"));
+        wallet.withdraw(amount);
+    }
+
+    function testWithdrawRejectFromUser() public {
+        vm.prank(user);
+        vm.expectRevert(bytes("Insufficient funds"));
+        wallet.withdraw(amount);
+    }
+
+    function testWithdraw() public { 
+        wallet.pay{value: amount}();
+
+        uint256 balance = amount - (amount * 5) / 100;
+        console.log(wallet.getBalance());
+        wallet.withdraw(amount);
+
+        assertEq(wallet.getBalance(), amount - balance);
+    }
+
+    function testWithdrawWithDelay() public {
+        uint256 startBalance = wallet.getBalance();
+        wallet.pay{value: amount}();
+        console.log(block.number);
+
+        vm.roll(block.number + 130);
+        console.log(block.number);
+        wallet.withdrawWithDelay(amount);
+
+        assertEq(wallet.getBalance(), startBalance);
+    }
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
 }
